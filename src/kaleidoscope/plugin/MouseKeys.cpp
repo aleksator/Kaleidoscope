@@ -25,25 +25,17 @@ namespace plugin {
 
 uint8_t MouseKeys_::mouseMoveIntent;
 
-uint8_t MouseKeys_::speed = 1;
+uint8_t MouseKeys_::speed = 15;
 uint16_t MouseKeys_::speedDelay = 1;
-
-uint8_t MouseKeys_::accelSpeed = 1;
-uint16_t MouseKeys_::accelDelay = 64;
 
 uint8_t MouseKeys_::wheelSpeed = 1;
 uint16_t MouseKeys_::wheelDelay = 50;
 
 uint16_t MouseKeys_::move_start_time_;
-uint16_t MouseKeys_::accel_start_time_;
 uint16_t MouseKeys_::wheel_start_time_;
 
 void MouseKeys_::setWarpGridSize(uint8_t grid_size) {
   MouseWrapper.warp_grid_size = grid_size;
-}
-
-void MouseKeys_::setSpeedLimit(uint8_t speed_limit) {
-  MouseWrapper.speedLimit = speed_limit;
 }
 
 void MouseKeys_::scrollWheel(uint8_t keyCode) {
@@ -72,7 +64,6 @@ EventHandlerResult MouseKeys_::afterEachCycle() {
 
 EventHandlerResult MouseKeys_::beforeReportingState() {
   if (mouseMoveIntent == 0) {
-    MouseWrapper.accelStep = 0;
     return EventHandlerResult::OK;
   }
 
@@ -82,13 +73,6 @@ EventHandlerResult MouseKeys_::beforeReportingState() {
   move_start_time_ = Runtime.millisAtCycleStart();
 
   int8_t moveX = 0, moveY = 0;
-
-  if (Runtime.hasTimeExpired(accel_start_time_, accelDelay)) {
-    if (MouseWrapper.accelStep < 255 - accelSpeed) {
-      MouseWrapper.accelStep += accelSpeed;
-    }
-    accel_start_time_ = Runtime.millisAtCycleStart();
-  }
 
   if (mouseMoveIntent & KEY_MOUSE_UP)
     moveY -= speed;
@@ -127,7 +111,6 @@ EventHandlerResult MouseKeys_::onKeyswitchEvent(Key &mappedKey, KeyAddr key_addr
   } else if (!(mappedKey.getKeyCode() & KEY_MOUSE_WARP)) {
     if (keyToggledOn(keyState)) {
       move_start_time_ = Runtime.millisAtCycleStart();
-      accel_start_time_ = Runtime.millisAtCycleStart();
       wheel_start_time_ = Runtime.millisAtCycleStart() - wheelDelay;
     }
     if (keyIsPressed(keyState)) {

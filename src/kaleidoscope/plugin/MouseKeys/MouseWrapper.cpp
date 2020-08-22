@@ -31,8 +31,6 @@ uint16_t MouseWrapper_::section_top;
 uint16_t MouseWrapper_::section_left;
 boolean MouseWrapper_::is_warping;
 
-uint8_t MouseWrapper_::accelStep;
-uint8_t MouseWrapper_::speedLimit = 127;
 uint8_t MouseWrapper_::subpixelsPerPixel = 16;
 
 void MouseWrapper_::warp_jump(uint16_t left, uint16_t top, uint16_t height, uint16_t width) {
@@ -97,19 +95,6 @@ void MouseWrapper_::warp(uint8_t warp_cmd) {
   warp_jump(section_left, section_top, next_height, next_width);
 }
 
-// To approximate a sine wave, this uses two parabolas. Acceleration begins
-// slowly, grows rapidly in the middle, and slows again near the top.
-uint8_t MouseWrapper_::acceleration(uint8_t cycles) {
-  if (cycles < 128) {
-    uint16_t c2 = cycles * cycles;
-    return 1 + (c2 >> 7);
-  } else {
-    uint16_t remaining_cycles = 256 - cycles;
-    uint16_t c2 = remaining_cycles * remaining_cycles;
-    return 255 - (c2 >> 7);
-  }
-}
-
 // Get the diagonalized version of a value, i.e. value * sqrt(2) / 2. If the
 // value ends up being zero, return the original value instead.
 static int16_t diagonalize(int16_t value) {
@@ -124,27 +109,13 @@ void MouseWrapper_::move(int8_t x, int8_t y) {
   int16_t moveY = 0;
   static int8_t remainderX = 0;
   static int8_t remainderY = 0;
-  int16_t effectiveSpeedLimit = speedLimit;
-
-  if (x != 0 && y != 0) {
-    // For diagonal movements, we apply a diagonalized speed limit. The
-    // effective speed limit is set based on whether we are moving diagonally.
-    effectiveSpeedLimit = diagonalize(effectiveSpeedLimit);
-
-    x = diagonalize(x);
-    y = diagonalize(y);
-  }
 
   if (x != 0) {
-    moveX = remainderX + (x * acceleration(accelStep));
-    if (moveX > effectiveSpeedLimit) moveX = effectiveSpeedLimit;
-    else if (moveX < -effectiveSpeedLimit) moveX = -effectiveSpeedLimit;
+    moveX = remainderX + x;
   }
 
   if (y != 0) {
-    moveY = remainderY + (y * acceleration(accelStep));
-    if (moveY > effectiveSpeedLimit) moveY = effectiveSpeedLimit;
-    else if (moveY < -effectiveSpeedLimit) moveY = -effectiveSpeedLimit;
+    moveY = remainderY + y;
   }
 
   end_warping();
